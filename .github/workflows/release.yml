@@ -1,0 +1,42 @@
+name: Build and Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release and Upload APK
+        uses: softprops/action-gh-release@v1
+        with:
+          files: app/build/outputs/apk/debug/*.apk
+          tag_name: ${{ github.ref_name }}
+          name: BLACKTV ${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## Novedades BLACKTV ${{ steps.get_version.outputs.VERSION }}
+            Actualización automática
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
